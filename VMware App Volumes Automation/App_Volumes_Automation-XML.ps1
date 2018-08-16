@@ -11,7 +11,7 @@ $Templatepath = 'cloudvolumes/apps_templates' ## Template path in VMware
 $Template = 'template.vmdk'                 ## Name of the template vmdk
 $vcenterserver = "vcenter@domain.local"     ## vCenter server 
 $vCenterUser = "administrator@domain.local" ## vCenter administrator
-$vCenterPassword = 'P@ssw0rd'               ## Password vCenter administratoe
+$vCenterPassword = 'P@ssw0rd'               ## Password vCenter administrator
 $ApplicationsFile = "C:\temp\Applications.xml" ## Path to application XML
 
 
