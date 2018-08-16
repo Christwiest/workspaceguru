@@ -95,7 +95,7 @@ timeout /t 5
 powershell.exe -executionpolicy Bypass -file "c:\temp\hit-enter.ps1"
 timeout /t 10
 powershell.exe -executionpolicy Bypass -file "c:\temp\hit-enter.ps1"'
-    $File = "C:\Users\administrator\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\hit-enter.bat"
+    $File = "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp\hit-enter.bat"
 
     Invoke-Command -Session $session -ScriptBlock {
         $filecontent = $args[0]
