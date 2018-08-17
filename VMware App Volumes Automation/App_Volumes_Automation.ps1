@@ -26,7 +26,7 @@ try {
     $ErrorMessage = $_.Exception.Message
     write-host "Module already loaded"
 }
- 
+
 Connect-VIServer -server $vCenterserver -user $vCenterUser -Password $vCenterPassword | out-null
 $VM = Get-VM -Name $App_server
 write-host "revert $App_server to $App_serversnapshot snapshot"
@@ -34,6 +34,7 @@ Set-VM -VM $VM -SnapShot $App_serversnapshot -Confirm:$false | out-null
 
 ### Turn on App_server
 write-host "boot $App_server"
+start-sleep 10
 Start-VM -VM $VM | out-null
 
 ### Connect to App Volume Server
@@ -69,14 +70,34 @@ $Provisioneruuid = $Provisioner.identifier
 
 ### Copy installer to Sequencer
 write-host "waiting for $App_server to boot"
-start-sleep 15
-while ((get-service -name "svservice" -computer "$App_server").status -ne "Running") { "sleeping"; start-sleep -s 1; }
+start-sleep 45
 write-host "copy $App_installername to copy to temp"
 Copy-Item -Path $App_Installpath -Destination "\\$App_server\c$\temp"
 $App_Installpath = "c:\temp\$App_installername"
+
+write-host "copying hit-enter.bat"
+$CredPass = ConvertTo-SecureString -String $App_server_password -AsPlainText -Force
+$Credentials = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList ($App_server_username, $CredPass)
+$session = New-PSSession -ComputerName $App_server -Credential $Credentials
+
+$Filecontent = 'timeout /t 5
+powershell.exe -executionpolicy Bypass -file "c:\temp\hit-enter.ps1"
+timeout /t 5
+powershell.exe -executionpolicy Bypass -file "c:\temp\hit-enter.ps1"
+timeout /t 10
+powershell.exe -executionpolicy Bypass -file "c:\temp\hit-enter.ps1"'
+$File = "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp\hit-enter.bat"
+
+Invoke-Command -Session $session -ScriptBlock {
+    $filecontent = $args[0]
+    $File = $args[1] 
+    New-item -Type file -Path $File |out-null
+    Add-content $file $Filecontent
+} -ArgumentList $Filecontent, $File |out-null
 write-host "finished copy starting provisioning"
 
 ### Start Provisioning
+start-sleep 10
 Invoke-WebRequest -WebSession $Login -Method Post -Uri "http://$server/cv_api/provisions/$Appid/start?computer_id=$Provisionerid&uuid=$Provisioneruuid" | out-null
 start-sleep 15
 
@@ -97,27 +118,9 @@ write-host "Installation finished"
 write-host "Rebooting end ending provisioning"
 
 write-host "wait for reboots to finish"
-$CredPass = ConvertTo-SecureString -String $App_server_password -AsPlainText -Force
-$Credentials = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList ($App_server_username, $CredPass)
-$session = New-PSSession -ComputerName $App_server -Credential $Credentials
-
-$Filecontent = 'timeout /t 5
-powershell.exe -executionpolicy Bypass -file "c:\temp\hit-enter.ps1"
-timeout /t 5
-powershell.exe -executionpolicy Bypass -file "c:\temp\hit-enter.ps1"
-timeout /t 10
-powershell.exe -executionpolicy Bypass -file "c:\temp\hit-enter.ps1"'
-$File = "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp\hit-enter.bat"
-
-Invoke-Command -Session $session -ScriptBlock {
-    $filecontent = $args[0]
-    $File = $args[1] 
-    New-item -Type file -Path $File |out-null
-    Add-content $file $Filecontent
-} -ArgumentList $Filecontent, $File |out-null
 
 restart-computer -ComputerName $App_server -Wait -Force
-start-sleep 200
+start-sleep 140
 
 write-host "Turn off $App_server"
 Stop-Computer -ComputerName $App_server -Force
