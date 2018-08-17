@@ -12,6 +12,10 @@ $Template = 'template.vmdk'                 ## Name of the template vmdk
 $vcenterserver = "vcenter@domain.local"     ## vCenter server 
 $vCenterUser = "administrator@domain.local" ## vCenter administrator
 $vCenterPassword = 'P@ssw0rd'               ## Password vCenter administrator
+$App_name = 'Firefox'                       ## Application name
+$App_Installpath ='\\DOMAIN\DFSROOT$\Software\Firefox 55.exe' ## Full application EXE or MSI path
+$App_installername = 'Firefox 55.exe'       ## Application installer name
+$App_paramters = '-ms'                      ## Silent installation parameters
 
 ### Revert Snapshot 
 write-host "starting creation of $App_name Appstack"

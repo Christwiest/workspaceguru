@@ -1,19 +1,19 @@
 <Applications>
 	<Application>
 		<App_name>FileZilla</App_name>
-		<App_Installpath>\\dtncomputers.nl\dfsroot$\Repository\FileZilla\FileZilla_3.17.0.1_win64-setup.exe</App_Installpath>
+		<App_Installpath>\\domain.local\dfsroot$\Repository\FileZilla\FileZilla_3.17.0.1_win64-setup.exe</App_Installpath>
 		<App_Installername>FileZilla_3.17.0.1_win64-setup.exe</App_Installername>
 		<App_Paramters>/S</App_Paramters>
 	</Application>
 	<Application>
 		<App_name>Firefox</App_name>
-		<App_Installpath>\\dtncomputers.nl\dfsroot$\Repository\Mozilla\Firefox Setup 57.0.exe</App_Installpath>
+		<App_Installpath>\\domain.local\dfsroot$\Repository\Mozilla\Firefox Setup 57.0.exe</App_Installpath>
 		<App_Installername>Firefox Setup 57.0.exe</App_Installername>
 		<App_Paramters>-ms</App_Paramters>
 	</Application>
 		<Application>
 		<App_name>Foxit Reader</App_name>
-		<App_Installpath>\\dtncomputers.nl\dfsroot$\Repository\Foxit\FoxitReader615.0624_prom_L10N_Setup.exe</App_Installpath>
+		<App_Installpath>\\domain.local\dfsroot$\Repository\Foxit\FoxitReader615.0624_prom_L10N_Setup.exe</App_Installpath>
 		<App_Installername>FoxitReader615.0624_prom_L10N_Setup.exe</App_Installername>
 		<App_Paramters>/verysilent /quiet /norestart</App_Paramters>
 	</Application>
