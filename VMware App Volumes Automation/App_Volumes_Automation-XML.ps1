@@ -1,7 +1,7 @@
 $AV_Username = "DOMAIN\User"                ## App Volumes Administrator
 $AV_Password = 'P@ssw0rd'                   ## App Volumes Administrator password
 $AV_server = "appvolume.domain.local"       ## App Volumes Server
-$App_server = "Seq-prod-01"                 ## Name of the Seqeuncer server on which we installmthe applications and create the layers
+$App_server = "Seq-prod-01"                 ## Name of the Seqeuncer server on which we install the applications and create the layers
 $App_server_username = "DOMAIN\User"        ## Account with local Administrator rights on sequencer server
 $App_server_password = 'P@ssw0rd'           ## Password of the administrator account
 $App_serversnapshot = 'start'               ## Name of the base snapshot of the seqeuncer
