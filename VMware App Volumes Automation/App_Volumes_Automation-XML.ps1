@@ -113,8 +113,6 @@ foreach ($Application in $Applications) {
         write-host -ForegroundColor "yellow" "Installation finished" 
     }
 
-  
-
     Invoke-Command -Session $session -ScriptBlock {
         $App_Installpath = $args[0]
         $App_paramters = $args[1]

@@ -107,12 +107,22 @@ $CredPass = ConvertTo-SecureString -String $App_server_password -AsPlainText -Fo
 $Credentials = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList ($App_server_username, $CredPass)
 $session = New-PSSession -ComputerName $App_server -Credential $Credentials
 
-Invoke-Command -Session $session -ScriptBlock {
-    $App_Installpath = $args[0]
-    $App_paramters = $args[1]
-    Start-Process -FilePath "$App_Installpath" -ArgumentList $App_paramters -Wait -PassThru -NoNewWindow |out-null
-} -ArgumentList $App_Installpath, $App_paramters | out-null
-write-host "Installation finished"
+If ($App_Installpath -like "*.msi"){ 
+    $App_arguments = "/q /i $App_Installpath /l*v C:\Temp\msi-install.log"
+    Invoke-Command -Session $session -ScriptBlock {
+        $App_arguments = $args[0]
+        Start-Process C:\Windows\System32\msiexec.exe -ArgumentList $App_arguments -Wait -NoNewWindow |out-null
+    } -ArgumentList $App_arguments | out-null
+    write-host -ForegroundColor "yellow" "Installation finished" 
+
+} else {
+    Invoke-Command -Session $session -ScriptBlock {
+        $App_Installpath = $args[0]
+        $App_paramters = $args[1]
+        Start-Process -FilePath "$App_Installpath" -ArgumentList $App_paramters -Wait -PassThru -NoNewWindow |out-null
+    } -ArgumentList $App_Installpath, $App_paramters | out-null
+    write-host -ForegroundColor "yellow" "Installation finished" 
+}
 
 ### End Provisioning 
 write-host "Rebooting end ending provisioning"
