@@ -15,7 +15,7 @@ $vCenterPassword = 'P@ssw0rd'               ## Password vCenter administrator
 $ApplicationsFile = "C:\temp\Applications.xml" ## Path to application XML
 
 
-Write-host "Loading $ApplicationsFile"
+Write-host -ForegroundColor "yellow" "Loading $ApplicationsFile"
 [xml]$ApplicationXml = Get-Content $ApplicationsFile
 $Applications = $ApplicationXml.Applications.Application
 
@@ -27,7 +27,7 @@ foreach ($Application in $Applications) {
     $App_paramters = $Application.App_Paramters
 
     ### Revert Snapshot 
-    write-host "starting creation of $App_name Appstack"
+    write-host -ForegroundColor "Green" "starting creation of $App_name Appstack"
     Remove-Module -Name Hyper-V -ErrorAction SilentlyContinue
     try {
         Add-PSSnapin -Name VMware.VimAutomation.Core 
@@ -38,16 +38,16 @@ foreach ($Application in $Applications) {
  
     Connect-VIServer -server $vCenterserver -user $vCenterUser -Password $vCenterPassword | out-null
     $VM = Get-VM -Name $App_server
-    write-host "revert $App_server to $App_serversnapshot snapshot"
+    write-host  -ForegroundColor "yellow" "revert $App_server to $App_serversnapshot snapshot"
     Set-VM -VM $VM -SnapShot $App_serversnapshot -Confirm:$false | out-null
 
     ### Turn on App_server
-    write-host "boot $App_server"
-    start-sleep 10
+    write-host -ForegroundColor "yellow" "boot $App_server"
+    start-sleep 20
     Start-VM -VM $VM | out-null
 
     ### Connect to App Volume Server
-    write-host "connect to $AV_server"
+    write-host -ForegroundColor "yellow"  "connect to $AV_server"
     $server = $AV_server
     $body = @{
         username = $AV_Username
@@ -59,14 +59,14 @@ foreach ($Application in $Applications) {
     Set-Variable -Name Server -value $server -Scope global
 
     ### Create new app volume wait on completion
-    write-host "Create App Volume"
+    write-host -ForegroundColor "yellow"  "Create App Volume"
     Invoke-WebRequest -WebSession $Login -Method Post -Uri "http://$server/cv_api/appstacks?bg=1&name=$App_name&datastore=$datastore&path=$Apppath&template_path=$templatepath&template_name=$Template" | out-null
     DO {
-        write-host "Wait until App Volume is created..."
+        write-host -ForegroundColor "blue"  "Wait until App Volume is created..."
         $pending_jobs = ((Invoke-WebRequest -WebSession $Login -Method Get -Uri "http://$server/cv_api/jobs/pending").content | ConvertFrom-Json)
         Start-Sleep -s 2
     }UNTIL($pending_jobs.pending -eq "0")
-    write-host "App Volume is created"
+    write-host -ForegroundColor "yellow" "App Volume is created"
 
     ### Get new app volume GUID 
     $App = ((Invoke-WebRequest -WebSession $Login -Method get -Uri "http://$server/cv_api/appstacks").content | convertFrom-Json) | Where-Object {$_.name -eq $App_name}
@@ -78,13 +78,35 @@ foreach ($Application in $Applications) {
     $Provisioneruuid = $Provisioner.identifier
 
     ### Copy installer to Sequencer
-    write-host "waiting for $App_server to boot"
-    start-sleep 45
-    write-host "copy $App_installername to copy to temp"
+    write-host -ForegroundColor "yellow" "waiting for $App_server to boot"
+    start-sleep 60
+    write-host -ForegroundColor "yellow" "copy $App_installername to temp"
     Copy-Item -Path $App_Installpath -Destination "\\$App_server\c$\temp"
     $App_Installpath = "c:\temp\$App_installername"
+    write-host -ForegroundColor "yellow"  "finished copy starting provisioning"
     
-    write-host "copying hit-enter.bat"
+    ### Start Provisioning
+    start-sleep 10
+    Invoke-WebRequest -WebSession $Login -Method Post -Uri "http://$server/cv_api/provisions/$Appid/start?computer_id=$Provisionerid&uuid=$Provisioneruuid" | out-null
+    start-sleep 15
+
+    ### install app
+    write-host -ForegroundColor "yellow"  "start installation of $App_installername on $App_server"
+    $CredPass = ConvertTo-SecureString -String $App_server_password -AsPlainText -Force
+    $Credentials = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList ($App_server_username, $CredPass)
+    $session = New-PSSession -ComputerName $App_server -Credential $Credentials
+
+    Invoke-Command -Session $session -ScriptBlock {
+        $App_Installpath = $args[0]
+        $App_paramters = $args[1]
+        Start-Process -FilePath "$App_Installpath" -ArgumentList $App_paramters -Wait -PassThru -NoNewWindow |out-null
+    } -ArgumentList $App_Installpath, $App_paramters | out-null
+    write-host -ForegroundColor "yellow" "Installation finished"  
+
+    ### End Provisioning 
+    write-host  -ForegroundColor "yellow" "Rebooting end ending provisioning"
+ 
+    write-host -ForegroundColor "yellow" "copying hit-enter.bat"
     $CredPass = ConvertTo-SecureString -String $App_server_password -AsPlainText -Force
     $Credentials = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList ($App_server_username, $CredPass)
     $session = New-PSSession -ComputerName $App_server -Credential $Credentials
@@ -95,7 +117,7 @@ timeout /t 5
 powershell.exe -executionpolicy Bypass -file "c:\temp\hit-enter.ps1"
 timeout /t 10
 powershell.exe -executionpolicy Bypass -file "c:\temp\hit-enter.ps1"'
-    $File = "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp\hit-enter.bat"
+    $File = "C:\Users\administrator\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\hit-enter.bat"
 
     Invoke-Command -Session $session -ScriptBlock {
         $filecontent = $args[0]
@@ -103,38 +125,15 @@ powershell.exe -executionpolicy Bypass -file "c:\temp\hit-enter.ps1"'
         New-item -Type file -Path $File |out-null
         Add-content $file $Filecontent
     } -ArgumentList $Filecontent, $File |out-null
-    write-host "finished copy starting provisioning"
 
-    ### Start Provisioning
-    start-sleep 10
-    Invoke-WebRequest -WebSession $Login -Method Post -Uri "http://$server/cv_api/provisions/$Appid/start?computer_id=$Provisionerid&uuid=$Provisioneruuid" | out-null
-    start-sleep 15
-
-    ### install app
-    write-host "start installation of $App_installername on $App_server"
-    $CredPass = ConvertTo-SecureString -String $App_server_password -AsPlainText -Force
-    $Credentials = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList ($App_server_username, $CredPass)
-    $session = New-PSSession -ComputerName $App_server -Credential $Credentials
-
-    Invoke-Command -Session $session -ScriptBlock {
-        $App_Installpath = $args[0]
-        $App_paramters = $args[1]
-        Start-Process -FilePath "$App_Installpath" -ArgumentList $App_paramters -Wait -PassThru -NoNewWindow |out-null
-    } -ArgumentList $App_Installpath, $App_paramters | out-null
-    write-host "Installation finished"
-
-    ### End Provisioning 
-    write-host "Rebooting end ending provisioning"
-
-    write-host "wait for reboots to finish"
-
+    write-host -ForegroundColor "blue"  "wait for reboots to finish"
     restart-computer -ComputerName $App_server -Wait -Force
-    start-sleep 140
+    start-sleep 200
 
-    write-host "Turn off $App_server"
+    write-host -ForegroundColor "yellow"  "Turn off $App_server"
     Stop-Computer -ComputerName $App_server -Force
     start-sleep 20
-    write-host "Creation of appstack $App_name completed"
+    write-host -ForegroundColor "green" "Creation of appstack $App_name completed"
 
 }
-write-host "Finished creating appstacks"
+write-host -ForegroundColor "green" "Finished creating appstacks"
