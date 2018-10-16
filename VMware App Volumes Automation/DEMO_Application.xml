@@ -11,7 +11,7 @@
 		<App_Installername>Firefox Setup 57.0.exe</App_Installername>
 		<App_Paramters>-ms</App_Paramters>
 	</Application>
-		<Application>
+	<Application>
 		<App_name>Foxit Reader</App_name>
 		<App_Installpath>\\domain.local\dfsroot$\Repository\Foxit\FoxitReader615.0624_prom_L10N_Setup.exe</App_Installpath>
 		<App_Installername>FoxitReader615.0624_prom_L10N_Setup.exe</App_Installername>
